@@ -11,6 +11,10 @@ jobs:
   polaris-scan:
     runs-on: ubuntu-latest
 
+    env:
+      POLARIS_SERVER_URL: ${{ vars.COP_POLARIS_SERVER_URL }}
+      POLARIS_ACCESS_TOKEN: ${{ secrets.COP_POLARIS_ACCESS_TOKEN }}
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -19,13 +23,20 @@ jobs:
         uses: actions/setup-java@v4
         with:
           distribution: temurin
-          java-version: '17'   # match <java.version> in WebGoat pom.xml
+          java-version: '21'
           cache: maven
 
-      # Polaris does the only build, so there's no separate mvn step
+      - name: Check Polaris URL and token
+        run: |
+          if [ -z "$POLARIS_SERVER_URL" ]; then echo "POLARIS_SERVER_URL is EMPTY"; exit 1; fi
+          if [ -z "$POLARIS_ACCESS_TOKEN" ]; then echo "POLARIS_ACCESS_TOKEN is EMPTY"; exit 1; fi
+
+      - name: Test Maven build on Java 21 (outside Coverity)
+        run: mvn -B clean compile -DskipTests -Djava.version=21 -Dmaven.compiler.release=21 -Dspotless.check.skip=true
 
       - name: Create polaris.yml
         run: |
+          rm -f polaris.yml
           cat > polaris.yml <<'EOF'
           version: "1"
           project:
@@ -39,7 +50,7 @@ jobs:
               cleanCommands:
                 - shell: [mvn, -B, clean]
               buildCommands:
-                - shell: [mvn, -B, clean, compile, -DskipTests]
+                - shell: [mvn, -B, clean, compile, -DskipTests, -Djava.version=21, -Dmaven.compiler.release=21, -Dspotless.check.skip=true]
           analyze:
             mode: central
           install:
@@ -50,12 +61,9 @@ jobs:
 
       - name: Download Polaris CLI
         run: |
-          curl -fLsS -o polaris_cli.zip "${{ vars.COP_POLARIS_SERVER_URL }}/api/tools/polaris_cli-linux64.zip"
+          curl -fLsS -o polaris_cli.zip "$POLARIS_SERVER_URL/api/tools/polaris_cli-linux64.zip"
           unzip -qo polaris_cli.zip -d /tmp
           echo "$(ls -d /tmp/polaris_cli-*/bin)" >> $GITHUB_PATH
 
       - name: Run Polaris analysis
-        env:
-          POLARIS_SERVER_URL: ${{ vars.COP_POLARIS_SERVER_URL }}
-          POLARIS_ACCESS_TOKEN: ${{ secrets.COP_POLARIS_ACCESS_TOKEN }}
         run: polaris --co project.name=coptest analyze -w
