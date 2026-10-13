@@ -13,13 +13,12 @@ jobs:
       - name: Checkout Source
         uses: actions/checkout@v4
 
-      # Add the toolchain your build needs (Java/Maven shown as an example)
-      # - name: Setup Java JDK
-      #   uses: actions/setup-java@v4
-      #   with:
-      #     java-version: 17
-      #     distribution: temurin
-      #     cache: maven
+      - name: Setup Java JDK
+        uses: actions/setup-java@v4
+        with:
+          java-version: 25
+          distribution: temurin
+          cache: maven
 
       - name: Generate Polaris config files
         run: |
@@ -43,7 +42,6 @@ jobs:
           EOF
 
           # coverity.yaml (build commands for compiled languages)
-          # Delete this block for Python/JavaScript/other interpreted languages
           cat > coverity.yaml <<'EOF'
           capture:
             build:
