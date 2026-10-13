@@ -48,7 +48,7 @@ jobs:
         run: |
           curl -fLsS -o polaris.zip $POLARIS_SERVER_URL/api/tools/polaris_cli-linux64.zip
           unzip -d ${{ runner.temp }} -jo polaris.zip && rm -f polaris.zip
-          ${{ runner.temp }}/polaris --co project.name=${{ github.event.repository.name }} analyze -w --coverity-build-command "mvn -B clean install -DskipTests"
+          ${{ runner.temp }}/polaris --co project.name=${{ github.event.repository.name }} analyze -w -- mvn -B clean install -DskipTests
 
       - name: Save Logs
         if: always()
