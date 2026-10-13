@@ -19,7 +19,7 @@ jobs:
         uses: actions/setup-java@v4
         with:
           distribution: temurin
-          java-version: '14'   # match <java.version> in WebGoat pom.xml
+          java-version: '17'   # match <java.version> in WebGoat pom.xml
           cache: maven
 
       # Polaris does the only build, so there's no separate mvn step
