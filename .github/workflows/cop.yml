@@ -1,14 +1,16 @@
-name: Coverity on Polaris Scan
+name: Coverity on Polaris
+
 on:
   push:
-    branches: [main, master, develop, stage, release]
+    branches: [main]
   pull_request:
-    branches: [main, master, develop, stage, release]
-  workflow_dispatch: {}
+    branches: [main]
+  workflow_dispatch:
 
 jobs:
   coverity-on-polaris:
     runs-on: ubuntu-latest
+
     steps:
       - name: Checkout Source
         uses: actions/checkout@v4
@@ -16,13 +18,17 @@ jobs:
       - name: Setup Java JDK
         uses: actions/setup-java@v4
         with:
-          java-version: 25
           distribution: temurin
+          java-version: '21'   # must match <java.version> in pom.xml
           cache: maven
+
+      - name: Verify Java and Maven
+        run: |
+          java -version
+          mvn -v
 
       - name: Generate Polaris config file
         run: |
-          # polaris.yml (turns on Coverity autoCapture)
           cat > polaris.yml <<'EOF'
           version: "1"
           project:
@@ -32,27 +38,26 @@ jobs:
               name: ${scm.git.commit}
               date: ${scm.git.commit.date}
           capture:
-            coverity:
-              autoCapture: enable
+            build:
+              cleanCommands:
+                - shell: [mvn, -B, clean]
+              buildCommands:
+                - shell: [mvn, -B, clean, compile, -DskipTests, -Dspotless.check.skip=true]
           analyze:
             mode: central
           install:
             coverity:
               version: default
           EOF
+          echo "---- polaris.yml ----"
+          cat polaris.yml
 
       - name: Coverity on Polaris Scan
         env:
-          POLARIS_SERVER_URL: ${{ vars.COP_POLARIS_SERVER_URL }}
+          POLARIS_SERVER_URL: ${{ secrets.COP_POLARIS_SERVER_URL }}
           POLARIS_ACCESS_TOKEN: ${{ secrets.COP_POLARIS_ACCESS_TOKEN }}
         run: |
-          curl -fLsS -o polaris.zip $POLARIS_SERVER_URL/api/tools/polaris_cli-linux64.zip
-          unzip -d ${{ runner.temp }} -jo polaris.zip && rm -f polaris.zip
-          ${{ runner.temp }}/polaris --co project.name=${{ github.event.repository.name }} analyze -w -- mvn -B clean install -DskipTests
-
-      - name: Save Logs
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: polaris-cli-logs
-          path: ${{ github.workspace }}/.blackduck
+          curl -fLsS -o polaris.zip "$POLARIS_SERVER_URL/api/tools/polaris_cli-linux64.zip"
+          unzip -qo polaris.zip -d "$RUNNER_TEMP/polaris"
+          POLARIS_BIN=$(ls -d "$RUNNER_TEMP"/polaris/polaris_cli-*/bin)
+          "$POLARIS_BIN/polaris" --co project.name=coptest analyze -w
