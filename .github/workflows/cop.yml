@@ -50,12 +50,12 @@ jobs:
 
       - name: Download Polaris CLI
         run: |
-          curl -fLsS -o polaris_cli.zip "${{ secrets.COP_POLARIS_SERVER_URL }}/api/tools/polaris_cli-linux64.zip"
+          curl -fLsS -o polaris_cli.zip "${{ vars.COP_POLARIS_SERVER_URL }}/api/tools/polaris_cli-linux64.zip"
           unzip -qo polaris_cli.zip -d /tmp
           echo "$(ls -d /tmp/polaris_cli-*/bin)" >> $GITHUB_PATH
 
       - name: Run Polaris analysis
         env:
-          POLARIS_SERVER_URL: ${{ secrets.COP_POLARIS_SERVER_URL }}
+          POLARIS_SERVER_URL: ${{ vars.COP_POLARIS_SERVER_URL }}
           POLARIS_ACCESS_TOKEN: ${{ secrets.COP_POLARIS_ACCESS_TOKEN }}
         run: polaris --co project.name=coptest analyze -w
