@@ -1,4 +1,4 @@
-name: Coverity on Polaris
+name: Polaris Coverity Scan
 
 on:
   push:
@@ -8,26 +8,23 @@ on:
   workflow_dispatch:
 
 jobs:
-  coverity-on-polaris:
+  polaris-scan:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout Source
+      - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Setup Java JDK
+      - name: Set up JDK
         uses: actions/setup-java@v4
         with:
           distribution: temurin
-          java-version: '21'   # must match <java.version> in pom.xml
+          java-version: '21'   # match <java.version> in WebGoat pom.xml
           cache: maven
 
-      - name: Verify Java and Maven
-        run: |
-          java -version
-          mvn -v
+      # Polaris does the only build, so there's no separate mvn step
 
-      - name: Generate Polaris config file
+      - name: Create polaris.yml
         run: |
           cat > polaris.yml <<'EOF'
           version: "1"
@@ -42,22 +39,23 @@ jobs:
               cleanCommands:
                 - shell: [mvn, -B, clean]
               buildCommands:
-                - shell: [mvn, -B, clean, compile, -DskipTests, -Dspotless.check.skip=true]
+                - shell: [mvn, -B, clean, compile, -DskipTests]
           analyze:
             mode: central
           install:
             coverity:
               version: default
           EOF
-          echo "---- polaris.yml ----"
           cat polaris.yml
 
-      - name: Coverity on Polaris Scan
+      - name: Download Polaris CLI
+        run: |
+          curl -fLsS -o polaris_cli.zip "${{ secrets.COP_POLARIS_SERVER_URL }}/api/tools/polaris_cli-linux64.zip"
+          unzip -qo polaris_cli.zip -d /tmp
+          echo "$(ls -d /tmp/polaris_cli-*/bin)" >> $GITHUB_PATH
+
+      - name: Run Polaris analysis
         env:
           POLARIS_SERVER_URL: ${{ secrets.COP_POLARIS_SERVER_URL }}
           POLARIS_ACCESS_TOKEN: ${{ secrets.COP_POLARIS_ACCESS_TOKEN }}
-        run: |
-          curl -fLsS -o polaris.zip "$POLARIS_SERVER_URL/api/tools/polaris_cli-linux64.zip"
-          unzip -qo polaris.zip -d "$RUNNER_TEMP/polaris"
-          POLARIS_BIN=$(ls -d "$RUNNER_TEMP"/polaris/polaris_cli-*/bin)
-          "$POLARIS_BIN/polaris" --co project.name=coptest analyze -w
+        run: polaris --co project.name=coptest analyze -w
