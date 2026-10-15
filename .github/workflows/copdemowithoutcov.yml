@@ -23,13 +23,9 @@ jobs:
         uses: actions/setup-java@v4
         with:
           distribution: temurin
-          java-version: '21'
+          java-version: '25'
           cache: maven
 
-      - name: Check Polaris URL and token
-        run: |
-          if [ -z "$POLARIS_SERVER_URL" ]; then echo "POLARIS_SERVER_URL is EMPTY"; exit 1; fi
-          if [ -z "$POLARIS_ACCESS_TOKEN" ]; then echo "POLARIS_ACCESS_TOKEN is EMPTY"; exit 1; fi
 
       - name: Test Maven build on Java 21 (outside Coverity)
         run: mvn -B clean compile -DskipTests -Djava.version=21 -Dmaven.compiler.release=21 -Dspotless.check.skip=true
