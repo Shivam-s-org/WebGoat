@@ -16,6 +16,12 @@ jobs:
       POLARIS_ACCESS_TOKEN: ${{ secrets.COP_POLARIS_ACCESS_TOKEN }}
 
     steps:
+      - name: Create coverity.yaml
+        shell: bash
+        run: |
+          cat > coverity.yaml << 'EOF'
+          capture:
+          EOF
       - name: Checkout code
         uses: actions/checkout@v4
 
