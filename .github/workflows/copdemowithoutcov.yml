@@ -1,4 +1,4 @@
-name: Polaris Coverity Scan
+name: COP Coverity Scan
 
 on:
   push:
@@ -35,7 +35,6 @@ jobs:
         run: |
           curl -fLsS -o polaris_cli.zip "$POLARIS_SERVER_URL/api/tools/polaris_cli-linux64.zip"
           unzip -qo polaris_cli.zip -d /tmp
-          echo "$(ls -d /tmp/polaris_cli-*/bin)" >> $GITHUB_PATH
 
       - name: Run Polaris analysis
         run: polaris --co project.name=coptest analyze -w
