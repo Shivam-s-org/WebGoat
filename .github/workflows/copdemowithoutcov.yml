@@ -26,6 +26,10 @@ jobs:
           java-version: '25'
           cache: maven
 
+          
+      - name: Test Maven build on Java 21 (outside Coverity)
+        run: mvn -B clean compile -DskipTests -Dspotless.check.skip=true
+
       
       - name: Download Polaris CLI
         run: |
